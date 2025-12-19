@@ -1,0 +1,74 @@
+\documentclass{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\usepackage{comment}
+\usepackage{amsmath}
+\usepackage{enumitem}
+
+\newtheorem{theorem}{Theorem}[section]   % numbered per section
+\newtheorem{lemma}[theorem]{Lemma}       % shares numbering with theorem
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\usepackage{titling}
+
+% Title formatting
+\pretitle{\centering\LARGE\bfseries\vspace{0em}}
+\posttitle{\par\vspace{1em}}
+
+\preauthor{\centering\large}
+\postauthor{\par\vspace{1em}}
+
+\predate{\centering\small}
+\postdate{\par}
+
+
+\setlength{\parindent}{0pt} % no indend automatically everywhere
+
+\title{Project Report\\Binary Heap and Dijkstra's Algorithm}
+\author{
+	\centering
+	Josefine Lindmar
+	Sonja Joost
+}
+\date{\today} % empty date
+
+
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Explain high level idea, name all challenges addresed in the upcoming sections
+
+\section{Binary Heap}
+Array vs Tree
+
+\section{Dijkstra's algorithm}
+implementation, termination proof, representation of the data, the proof, which helper lemmas are still needed 
+
+
+full / in detail paper proof, always connecting to the progress in Lean
+
+\section{Reflection on LLM Usage}
+
+\begin{thebibliography}{9}
+\bibitem{dijkstra}
+Wikipedia,
+\textit{Dijkstra's algorithm.} \url{https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm}.
+
+\bibitem{mathlib4}
+Lean4, Mathlib4,
+\textit{SimpleGraph documentation.} \url{https://leanprover-community.github.io/mathlib4_docs/Mathlib/Combinatorics/SimpleGraph/Basic.html#SimpleGraph}.
+
+\bibitem{clrs}
+Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein,  
+\textit{Introduction to Algorithms},  
+3rd edition,  
+MIT Press, Cambridge, MA, 2009.
+\end{thebibliography}
+
+\end{document}
