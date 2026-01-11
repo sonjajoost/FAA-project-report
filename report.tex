@@ -94,33 +94,54 @@ For the operations on the binary heap, we show that they function as expected. I
 Heapify is a subroutine that is used by several of the operations. It takes a binary tree as input for which the heap invariant holds for both of its children if they exist and moves the root node to the correct position such that the heap invariant holds for the whole binary tree. We show for the formalization that it establishes the heap invariant and the output contains the exact same nodes as the input. We formulate the theorem to be over general trees (as opposed to only nodes that have children) to be able to perform induction in the proof. In particular:
 \\
 
-\textbf{Theorem. Correctness \texttt{heapify}.}
+\begin{theorem}[Theorem. Correctness \texttt{heapify}.]
 Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
  \begin{align}  
 &(\forall v. v \in bt \iff v \in \texttt{heapify}(bt, f)) \land \\
 &(\exists l, v, r. bt = \texttt{node} (l, v, r) \Rightarrow \texttt{is\_min\_heap}(l, f) \land \texttt{is\_min\_heap}(r, f) \Rightarrow  \texttt{is\_min\_heap}(\texttt{heapify}(bt, f), f))
  \end{align}
 \\
+\end{theorem}
+
 \textbf{English explanation.} To prove the first part, we just show that no node was added or removed during the heapify operation. The second part requires a proof by functional induction over \texttt{heapify}. The base cases are trivial as the \texttt{leaf} and the node with only \texttt{leafs} as children satisfy the heap invariant by definition. The cases that don't call \texttt{heapify} recursively can be solved with the definition and the assumptions availiable at the respective proof states. For the other three cases, the structure of the proof is similar: We use the fact that a binary tree satisfies the heap condition if both children are min heaps and the value assigned the root node is less of equal to the one of the children. This allows us to use the induction hypothesis for the two children and we are able to use the conditions for the cases to show that the root indeed holds the minimum value.
 
 
 \textbf{Lean correspondence.}
 We show both statements separately. We split the first one into the both directions (\texttt{contains\_then\_heapify\_contains, heapify\_contains\_then\_contains}) and can prove both with functional induction over \texttt{heapify} and the definition of \texttt{contains} (which corresponds to $\in$).
-We do \texttt{fun\_induction heapify generalizing l r v; all\_goals expose\_names}. Note that we need to generalize the induction hypothesis in order to apply it to the children of the tree. For the leaf cases and the ones that do not recurs, we can simply use the definition of heapify together with the assumptions. For the cases that call \texttt{heapify}, we define a helper lemma that shows that if the two children are min heaps and the value assigned to the root is less than or equal to that of the children, then the tree is a min heap (\texttt{left\_and\_right\_are\_min\_heap\_and\_root\_is\_min\_of\_children\_is\_min\_Heap}). To show that the children are min heaps we can simply use the induction hypothesis (as the children are min heaps, its children are also min heaps, so the induction hypothesis can be applied (by \texttt{min\_heap\_then\_left\_and\_right\_are\_min\_heap})) and the assumptions. To show that the root value is smaller that the values of the children, we use the fact, that in the \texttt{heapify} we switch the root with the smaller child if it is larger and then, the smallest value of each of the children is smaller than the root because the children are min heaps (\texttt{root\_is\_min\_of\_children, min\_heap\_member\_le\_root}) and its members did not change except for the potentially switched root whose value is larger (\texttt{heapify\_contains\_then\_contains}).
+We do \texttt{fun\_induction heapify generalizing l r v; all\_goals expose\_names}. Note that we need to generalize the induction hypothesis in order to apply it to the children of the tree. For the leaf cases and the ones that do not recurs, we can simply use the definition of heapify together with the assumptions. For the cases that call \texttt{heapify}, we define a helper lemma that shows that if the two children are min heaps and the value assigned to the root is less than or equal to that of the children, then the tree is a min heap (\texttt{left\_and\_right\_are\_min\_heap\_and\_root\_is\_min\_of\_children\_is\_min\_heap}). To show that the children are min heaps we can simply use the induction hypothesis (as the children are min heaps, its children are also min heaps, so the induction hypothesis can be applied (by \texttt{min\_heap\_then\_left\_and\_right\_are\_min\_heap})) and the assumptions. To show that the root value is smaller that the values of the children, we use the fact, that in the \texttt{heapify} we switch the root with the smaller child if it is larger and then, the smallest value of each of the children is smaller than the root because the children are min heaps (\texttt{root\_is\_min\_of\_children, min\_heap\_member\_le\_root}) and its members did not change except for the potentially switched root whose value is larger (\texttt{heapify\_contains\_then\_contains}).
 
 \subsubsection{insert}
-...
+For the \texttt{insert} operation, we show that all members are equal with the addition of the inserted node.
 \\
+\begin{theorem}[Insert Correctness]
+Let $bt : \mathsf{BinaryTree}\,\alpha$ and $f : \alpha \to \mathbb{N} \cup \{\infty\}$. Then
+\begin{align}
+\bigl(
+\forall v\, v',\;
+ v \in bt\; \lor v = v'
+\;\Longleftrightarrow\;
+v \in (\mathsf{insert}\; bt\; v'\; f)\;
+\bigr)
+\;\land\;\\
+\bigl(
+\mathsf{is\_min\_heap}\; bt\; f
+\;\Longrightarrow\;
+\mathsf{is\_min\_heap}\; (\mathsf{insert}\; bt\; v\; f)\; f
+\bigr).
+\end{align}
+\end{theorem}
 
-\textbf{Theorem. Correctness \texttt{insert}.}
-Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
- \begin{align}  
-...
- \end{align}
-\\
 \textbf{English explanation.}
-\\
+For the correctness proof, we show two parts. The first one can be further decomposed into the two directions. Showing that the tree with inserted node still contains all nodes can be shown via functional induction over insert assuming there is a node $vi$ n $bt$. The base case is trivial. If the binary tree is initially a leaf, then the case can be solved by contradiction as a leaf can not contain a value. In the step case, we assume v is contained in the current node and analyze whether it is at the root or in one of the subtrees. If it is in a subtree, we apply the induction hypothesis to that subtree and then reconstruct the proof for the inserted tree, showing that insertion preserves membership of existing elements. To show that the inserted node is in the new tree, we can again perform a simple function induction. If the tree was a leaf, the value is added in the root. In the other case it either is inserted at the root which concludes the proof or it is propagated to the children. In that case, we can use the insuction hypothesis.
+For the other direction, we can again perform functional induction over insert. The leaf case is trivial, in that case $v = v'$. In the two step cases, we make a case distinction over the membership of $v$. It is either at the root in which case we have $v=v'$ or it is a member of the children. In that case, we can use the induction hypothesis.
+
+In the second part of the proof we show that insertion maintains the min-heap invariant, assuming the original tree is a min-heap. We use functional induction over insert. The base case is trivial as any node with only leafs as children is a min heap by definition. For the two step cases, we again make use of the fact, that if the children are min heaps and their roots are smaller than the root of $bt$, then $bt$ is a min heap. As the condition in the definition ensures that the value is inserted at the root if it is smaller than the current node, we can show that the root remains the minimum. And as the node is propagated to the children if it is larger, we can make use of the induction hypothesis.
+
 \textbf{Lean correspondence.}
+
+We use a similar structure as described above. We show the first part with the lemmas \texttt{insert\_contains- \_inserted} and \texttt{contains\_then\_insert\_contains} for one direction and \texttt{insert\_contains\_then\_contains\_or- \_inserted} for the other one, respectively. All are shown with functional induction over \texttt{insert}.
+
+The preservation of the heap invariant is shown in \texttt{insert\_preserves\_min\_heap}. It makes use of \texttt{left- \_and\_right\_are\_min\_heap\_and\_root\_is\_min\_of\_children\_is\_min\_heap} and  \texttt{min\_heap\_then\_left\_and\_right- \_are\_min\_heap} which shows that the children of a min heap are min heaps if they exist.
 
 \subsubsection{extract-min}
 \textbf{Theorem. Correctness \texttt{extract-min}.}
