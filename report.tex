@@ -49,7 +49,101 @@
 TODO Brief overview and motivation
 
 \section{Binary Heap}
-Array vs Tree
+\textbf{Goal.} The goal of the binary heap part of the project is to formalize the binary heap together with the operations needed for the Dijstra algorithm. This included the following:
+\begin{itemize}
+    \item \texttt{heapify}: Create a heap from a given array
+    \item \texttt{insert}: Add a new key to the heap and restore the binary heap invariant by bubbling the element to its correct position.
+    \item \texttt{extract-min (/max)}: Pop the minimum (resp. maximum) element from the heap and restore the binary heap invariant by placing a leaf node at the root and trickling it down to the position it belongs.
+    \item \texttt{decrease-key (/increase-key)}: Decrease (resp. increase) the value of an element’s key to the new value, which is assumed to be less than or equal to the current key's value and restoring the heap invariant such that the node is at the correct position according to its new value.
+\end{itemize}
+
+\subsection*{Data Structure}
+
+A binary heap is a data structure that represents data as a nearly complete binary tree \cite{clrs}. The binary heap must satisfy the heap condition, which depends on the type of heap. There are min and max heaps, where the root is the smallest or highest value, respectively. In a min heap, the value of each node is less than or equal to its parent's value. In a max heap, the value of each node is greater than or equal to its parent's value.
+
+
+A binary heap as two possible representations. It can be viewed as a binary tree as well as an array that is structured as binary tree through the indices. As the binary tree representation allows for a straight forward possibility to perform structural induction, we chose to take a binary heap as underlying data structure for the binary heap.
+\newline
+
+\small
+\texttt{inductive BinaryTree (}\(\alpha\)\texttt{ : Type)}\\
+\texttt{| leaf : BinaryTree }\(\alpha\)\\
+\texttt{| node : BinaryTree }\(\alpha\)\texttt{ $\to$ }\(\alpha\)\texttt{ $\to$ BinaryTree }\(\alpha\)\texttt{ $\to$ BinaryTree }\(\alpha\)
+\vspace{3mm}
+\newpage
+
+We chose to allow a the binary heap to be of any type $\alpha$. As we will later see, there are some restrictions on $\alpha$ needed for the implementation of some operations. The values of the nodes are assigned by a function $f$ that is passed along with the binary tree. $f$ assigns to each node a value of type \texttt{ENat}. \texttt{ENat} allows for the representation of infinity which is needed for the Dijksta algorithm.
+The binary min heap invariant is then defined as a proposition on the binary tree that holds whenever all nodes have a smaller value assigned to by $f$ than its parents:
+ \newline
+ 
+\texttt{def is\_min\_heap : BinaryTree }$\alpha$\texttt{ → (ordering : }$\alpha$\texttt{ → ENat) → Prop}\\
+\texttt{| leaf, \_ => true}\\
+\texttt{| node l v r, f => match l, r with}\\
+\quad\texttt{| leaf, leaf => true}\\
+\quad\texttt{| node \_ lv \_, leaf => f v }$\le $\texttt{ f lv }$\wedge$\texttt{ isMinHeap l f}\\
+\quad\texttt{| leaf, node \_ rv \_ => f v }$ \le $\texttt{ f rv }$\wedge$\texttt{ isMinHeap r f}\\
+\quad\texttt{| node \_ lv \_, node \_ rv \_ =>}\\
+\qquad\texttt{ f v } $\le $\texttt{ f lv }$\wedge$\texttt{ isMinHeap l f }$\wedge$\texttt{}
+\texttt{ f v }$ \le$ \texttt{ f rv }$\wedge$\texttt{ isMinHeap r f}\\
+\vspace{3mm}
+
+
+\subsection{Operations}
+For the operations on the binary heap, we show that they function as expected. In particular, we show that the functionality is correct and the binary heap invariant is established (or preserved, respectively).
+\subsubsection{heapify}
+Heapify is a subroutine that is used by several of the operations. It takes a binary tree as input for which the heap invariant holds for both of its children if they exist and moves the root node to the correct position such that the heap invariant holds for the whole binary tree. We show for the formalization that it establishes the heap invariant and the output contains the exact same nodes as the input. We formulate the theorem to be over general trees (as opposed to only nodes that have children) to be able to perform induction in the proof. In particular:
+\\
+
+\textbf{Theorem. Correctness \texttt{heapify}.}
+Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
+ \begin{align}  
+&(\forall v. v \in bt \iff v \in \texttt{heapify}(bt, f)) \land \\
+&(\exists l, v, r. bt = \texttt{node} (l, v, r) \Rightarrow \texttt{is\_min\_heap}(l, f) \land \texttt{is\_min\_heap}(r, f) \Rightarrow  \texttt{is\_min\_heap}(\texttt{heapify}(bt, f), f))
+ \end{align}
+\\
+\textbf{English explanation.} To prove the first part, we just show that no node was added or removed during the heapify operation. The second part requires a proof by functional induction over \texttt{heapify}. The base cases are trivial as the \texttt{leaf} and the node with only \texttt{leafs} as children satisfy the heap invariant by definition. The cases that don't call \texttt{heapify} recursively can be solved with the definition and the assumptions availiable at the respective proof states. For the other three cases, the structure of the proof is similar: We use the fact that a binary tree satisfies the heap condition if both children are min heaps and the value assigned the root node is less of equal to the one of the children. This allows us to use the induction hypothesis for the two children and we are able to use the conditions for the cases to show that the root indeed holds the minimum value.
+
+
+\textbf{Lean correspondence.}
+We show both statements separately. We split the first one into the both directions (\texttt{contains\_then\_heapify\_contains, heapify\_contains\_then\_contains}) and can prove both with functional induction over \texttt{heapify} and the definition of \texttt{contains} (which corresponds to $\in$).
+We do \texttt{fun\_induction heapify generalizing l r v; all\_goals expose\_names}. Note that we need to generalize the induction hypothesis in order to apply it to the children of the tree. For the leaf cases and the ones that do not recurs, we can simply use the definition of heapify together with the assumptions. For the cases that call \texttt{heapify}, we define a helper lemma that shows that if the two children are min heaps and the value assigned to the root is less than or equal to that of the children, then the tree is a min heap (\texttt{left\_and\_right\_are\_min\_heap\_and\_root\_is\_min\_of\_children\_is\_min\_Heap}). To show that the children are min heaps we can simply use the induction hypothesis (as the children are min heaps, its children are also min heaps, so the induction hypothesis can be applied (by \texttt{min\_heap\_then\_left\_and\_right\_are\_min\_heap})) and the assumptions. To show that the root value is smaller that the values of the children, we use the fact, that in the \texttt{heapify} we switch the root with the smaller child if it is larger and then, the smallest value of each of the children is smaller than the root because the children are min heaps (\texttt{root\_is\_min\_of\_children, min\_heap\_member\_le\_root}) and its members did not change except for the potentially switched root whose value is larger (\texttt{heapify\_contains\_then\_contains}).
+
+\subsubsection{insert}
+...
+\\
+
+\textbf{Theorem. Correctness \texttt{insert}.}
+Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
+ \begin{align}  
+...
+ \end{align}
+\\
+\textbf{English explanation.}
+\\
+\textbf{Lean correspondence.}
+
+\subsubsection{extract-min}
+\textbf{Theorem. Correctness \texttt{extract-min}.}
+Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
+ \begin{align}  
+...
+ \end{align}
+\\
+\textbf{English explanation.}
+\\
+\textbf{Lean correspondence.}
+
+\subsubsection{decrease-key}
+\textbf{Theorem. Correctness \texttt{decrease-key}.}
+Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
+ \begin{align}  
+...
+ \end{align}
+\\
+\textbf{English explanation.}
+\\
+\textbf{Lean correspondence.}
+
 
 \section{Dijkstra's algorithm}
 \textbf{Goal.} Formalize Dijkstra's algorithm over finite graphs and prove correctness, using a priority queue abstraction. Our Lean development lives in \texttt{Projects/Lindmar\_Joost/Dijkstra.lean}.\\
@@ -71,7 +165,7 @@ We split the implementation into three parts: \texttt{dijkstra} (a non-recursive
 We prove termination by the measure \texttt{queue.sizeOf}: if \texttt{queue.isEmpty} the recursion stops, otherwise extracting the minimum yields \texttt{(u, queue')} and \texttt{BinaryHeap.sizeOf\_extract\_min\_lt\_of\_isEmpty\_eq\_false} gives \(\texttt{queue'.sizeOf} < \texttt{queue.sizeOf}\); since \texttt{relaxNeighbors} does not increase the heap size the post-relax queue has strictly smaller size than the original, so the \texttt{queue.sizeOf} measure decreases on every recursive call. In Lean this is written as \texttt{termination\_by queue.sizeOf} and discharged by applying \texttt{BinaryHeap.sizeOf\_extract\_min\_lt\_of\_isEmpty\_eq\_false} plus the trivial bookkeeping to turn the hypothesis into the expected \texttt{isEmpty = false} form.
 
 
-\subsection*{Correcntess proof (\texorpdfstring{$\texttt{dijkstra\_correctness}$}{dijkstra\_correctness})}
+\subsection*{Correctness proof (\texorpdfstring{$\texttt{dijkstra\_correctness}$}{dijkstra\_correctness})}
 \emph{Statement.} For any vertex \(v\), the algorithm’s output equals the graph distance $\delta$: \[(\texttt{dijkstra}\ g\ s\ v)\ v = \delta(g,s,v)\]
 
 The proof proceeds by fixing the algorithm's output and deriving a contradiction from any alleged disagreement with the true graph distance. Concretely, set
@@ -280,6 +374,7 @@ That said, LLMs were occasionally helpful for very small steps. Given a specific
 
 \subsection{One design decision we would reconsider}
 Make distances and priority queue a fixed pair.
+Use array based heap implemetation.
 
 \subsection{What we have learned}
 
