@@ -232,7 +232,7 @@ The proof relies on the auxiliary lemmas
 \texttt{contains\_then\_decrease\_priority\_contains},
 \texttt{decrease\_priority\_contains\_then\_contains}, and
 \texttt{decrease\_priority\_preserves\_min\_heap} following the same procedure as described above.
-As mentioned, \texttt{decrease\_priority} is built on top of \texttt{insert} and \texttt{remove}, so we showed the corresponding correctness lemmas for \texttt{remove} (\texttt{as correctness of insert is already shown above}) using functional induction and could combine the lemmas with the auxiliary lemmas from \texttt{insert} to prove the final goals.
+As mentioned, \texttt{decrease\_priority} is built on top of \texttt{insert}, \texttt{remove} and \texttt{merge}, so we showed the corresponding correctness lemmas for \texttt{remove} and \texttt{merge} (\texttt{as correctness of insert is already shown above}) using functional induction and could combine the lemmas with the auxiliary lemmas from \texttt{insert} to prove the final goals.
 
 \section{Dijkstra's algorithm}
 \textbf{Goal.} Formalize Dijkstra's algorithm over finite graphs and prove correctness, using a priority queue abstraction. Our Lean development lives in \texttt{Projects/Lindmar\_Joost/Dijkstra.lean}.\\
