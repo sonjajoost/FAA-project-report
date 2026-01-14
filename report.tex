@@ -46,7 +46,8 @@
 \maketitle
 
 \section{Introduction}
-TODO Brief overview and motivation
+In this project we formalized the binary heap data structure and proved correctness of its operations as well as Dijkstra's shortest path algorithm.
+(noch mehr vllt TODO)
 
 \section{Binary Heap}
 \textbf{Goal.} The goal of the binary heap part of the project is to formalize the binary heap together with the operations needed for the Dijstra algorithm. This included the following:
@@ -143,33 +144,100 @@ We use a similar structure as described above. We show the first part with the l
 
 The preservation of the heap invariant is shown in \texttt{insert\_preserves\_min\_heap}. It makes use of \texttt{left- \_and\_right\_are\_min\_heap\_and\_root\_is\_min\_of\_children\_is\_min\_heap} and  \texttt{min\_heap\_then\_left\_and\_right- \_are\_min\_heap} which shows that the children of a min heap are min heaps if they exist.
 
-\subsubsection{extract-min}
-\textbf{Theorem. Correctness \texttt{extract-min}.}
-Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
- \begin{align}  
-...
- \end{align}
-\\
+\subsubsection{extract\_min}
+
+For the \texttt{extract\_min} operation, we show that removing the minimum element preserves all remaining elements and maintains the min-heap invariant. Additionally, we show that the extracted element corresponds to the minimum priority stored in the heap. The \texttt{extract\_min} operation returns a pair: the left part is the minimal element, and the right part is the tree with the element removed.
+
+\begin{theorem}[Extract-Min Correctness]
+Let $bt, l, r : \mathsf{BinaryTree}\,\alpha$, $v, v' : \alpha$, and
+$f : \alpha \to \mathbb{N} \cup \{\infty\}$. Then
+\begin{align}
+&\bigl(
+\mathsf{contains}\; (\mathsf{extract\_min}\; bt\; f).2\; v
+\;\Longrightarrow\;
+\mathsf{contains}\; bt\; v
+\bigr)
+\;\land\;\\
+&\bigl(
+bt = \mathsf{node}\; l\; v\; r
+\;\Longrightarrow\;
+\mathsf{contains}\; bt\; v'
+\;\Longrightarrow\;
+v \neq v'
+\;\Longrightarrow\;
+\mathsf{contains}\; (\mathsf{extract\_min}\; bt\; f).2\; v'
+\bigr)
+\;\land\;\\
+&\bigl(
+bt = \mathsf{node}\; l\; v\; r
+\;\Longrightarrow\;
+\mathsf{is\_min\_heap}\; bt\; f
+\;\Longrightarrow\;
+\exists bt'\, v',\;
+\mathsf{extract\_min}\; bt\; f = (\mathsf{some}\; v', bt')
+\;\\ &\land\;
+\mathsf{is\_min\_heap}\; bt'\; f
+\;\land\;
+f\,v = \mathsf{heap\_min}\; bt\; f
+\bigr).
+\end{align}
+\end{theorem}
+
 \textbf{English explanation.}
-\\
+The correctness proof of \texttt{extract\_min} consists of several interconnected parts.
+
+First, we show that every element contained in the resulting tree after extraction was already present in the original tree. This establishes that \texttt{extract\_min} does not introduce any new elements. The proof proceeds by structural reasoning over the definition of \texttt{extract\_min}. Since the operation only removes the root element and restructures the remaining tree, all elements in the resulting tree must have originated from the original heap.
+
+Second, assuming that the original tree satisfies the min heap invariant, we show that \texttt{extract\_min} returns a value $v'$ together with a tree $bt'$ and the resulting tree $bt'$ is again a min heap and the extracted value $v'$ corresponds to the minimum priority stored in the original heap. This follows from the definition of \texttt{extract\_min}, which removes the root of the heap and then restores the heap property by rearranging the remaining nodes. The induction hypothesis ensures that all recursive calls preserve the heap invariant.
+
+Finally, we show that extraction preserves the membership of all elements except for the removed root. If the original tree is a node with the root value $v$, the
+
+
 \textbf{Lean correspondence.}
 
-\subsubsection{decrease-key}
-\textbf{Theorem. Correctness \texttt{decrease-key}.}
-Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to \mathbb{N} \cup \{\infty\}$ be a function. Then:
- \begin{align}  
-...
- \end{align}
-\\
-\textbf{English explanation.}
-\\
-\textbf{Lean correspondence.}
+In Lean, we followed a similar structure as described above: We defined the auxiliary lemmas 
+\texttt{extract\_min\_correct\_node},
+\texttt{extract\_min\_contains\_then\_contains}, and
+\texttt{contains\_then\_extract\_min\_contains\_except\_root}, each of which proving one piece of the theorem. To implement the \texttt{extract\_min} function, we defined a \texttt{get\_last} function that finds the last element. \texttt{extract\_min} then puts it at the root position instead of the minimum element which is taken out of the tree and returned. \texttt{extract\_min} applies the \texttt{heapify} function to restore the heap invariant. 
+Because of this setup, we first showed membership lemmas for \texttt{get\_last} and then used them in the proofs for \texttt{extract\_min}.
+For the proof of the heap invariant, we showed that if $bt$ is a min heap, then, for the result of  \texttt{get\_last} holds that the left aud right sub trees are min heaps. This is the precondition to show that \texttt{heapify} restores the heap invariant.
 
+\subsubsection{decrease\_priority}
+
+For the \texttt{decrease\_priority} operation, we show that all existing members of the binary tree are preserved and that the min-heap invariant is maintained when the priority of a node is decreased.
+\begin{theorem}[Decrease Priority Correctness]
+Let $bt : \mathsf{BinaryTree}\,\alpha$, $v, v' : \alpha$, and $f : \alpha \to \mathbb{N} \cup \{\infty\}$, assuming decidable equality on $\alpha$. Then
+\begin{align}
+&\mathsf{contains}\; bt\; v
+\;\Longleftrightarrow\;
+\mathsf{contains}\; (\mathsf{decrease\_priority}\; bt\; v'\; f)\; v
+\;\land\;
+\\&\bigl(
+\mathsf{is\_min\_heap}\; bt\; f
+\;\Longrightarrow\;
+\mathsf{is\_min\_heap}\; (\mathsf{decrease\_priority}\; bt\; v\; f)\; f
+\bigr).
+\end{align}
+\end{theorem}
+
+\textbf{English explanation.}
+The correctness proof for \texttt{decrease\_priority} consists of two parts.
+
+First, we show that decreasing the priority of a node does not change the set of elements contained in the tree. This is split up in two parts and by shown by induction on the definition of \texttt{decrease\_priority} which is a combination of first removing and then inserting the node in the tree. We show that executing them in sequence leads to the same members in the tree.
+
+Second, we show that the min heap invariant is preserved when decreasing a key. As \texttt{decrease\_priority} makes use of heapify, this is shown by the proof of correctness of heapify.
+
+\textbf{Lean correspondence.}
+The proof relies on the auxiliary lemmas
+\texttt{contains\_then\_decrease\_priority\_contains},
+\texttt{decrease\_priority\_contains\_then\_contains}, and
+\texttt{decrease\_priority\_preserves\_min\_heap} following the same procedure as described above.
+As mentioned, \texttt{decrease\_priority} is built on top of \texttt{insert} and \texttt{remove}, so we showed the corresponding correctness lemmas for \texttt{remove} (\texttt{as correctness of insert is already shown above}) using functional induction and could combine the lemmas with the auxiliary lemmas from \texttt{insert} to prove the final goals.
 
 \section{Dijkstra's algorithm}
 \textbf{Goal.} Formalize Dijkstra's algorithm over finite graphs and prove correctness, using a priority queue abstraction. Our Lean development lives in \texttt{Projects/Lindmar\_Joost/Dijkstra.lean}.\\
 
-We represent the graph as a finite simple graph so vertices have decidable equality (exactly how we have seen it in the BinarySort examples in class). Distances use extended natural numbers (so an unknown distance can be “infinity”), called \texttt{ENat} in Lean. The algorithm state is just a pair: a distance map from vertices to these extended naturals (\(\texttt{dist} : V \to \mathbb{N}_\infty\)) and a binary-heap priority queue (\(\texttt{queue} : \texttt{BinaryHeap}\)). The heap exposes abstract operations (empty check, extract-min, decrease-priority, size) and the proofs only rely on their contracts. 
+We represent the graph as a finite simple graph so that vertices have decidable equality (exactly as we have seen in the BinarySort examples in class). Distances use extended natural numbers (so an unknown distance can be “infinity”), called \texttt{ENat} in Lean. The algorithm state is just a pair: a distance map from vertices to these extended naturals (\(\texttt{dist} : V \to \mathbb{N}_\infty\)) and a binary-heap priority queue (\(\texttt{queue} : \texttt{BinaryHeap} V\)). The heap exposes abstract operations (empty check, extract-min, decrease-priority, size) and the proofs only rely on their contracts. 
 
 The algorithm is split up into three parts: 
 \begin{itemize}
@@ -203,9 +271,11 @@ Assume, for contradiction, that there exists a vertex \(u\) with \(\texttt{dist}
 \[
 \delta(s,u)=\delta(s,y)+1
 \]
-(Lean: \texttt{existsPredOnShortestPath}). By minimality of \(u\) we have \(\delta(s,y)<\delta(s,u)\), hence \(\texttt{dist}\ y=\delta(s,y)\).
+(Lean: \texttt{existsPredOnShortestPath}).
 
-Now apply the algorithmic per-edge final bound \texttt{relaxAdj\_final\_bound} to the edge \(y\sim u\). That lemma (which internally uses \texttt{exists\_extract\_or\_top}, \texttt{relaxNeighbors\_adj\_upper}, and the \(y\)-stability lemmas such as \texttt{extracted\_value\_is\_final\_lemma}) yields
+By minimality of \(u\) we have \(\delta(s,y)<\delta(s,u)\), hence \[\texttt{dist}\ y=\delta(s,y)\]
+
+Now apply the algorithmic per-edge final bound \texttt{relaxAdj\_final\_bound} to the edge \(y\sim u\). That lemma yields
 \[
 \texttt{dist}\ u \le \texttt{dist}\ y + 1.
 \]
@@ -294,12 +364,12 @@ All of the lemmas have been fully formalized except for the search lemma \texttt
 \subsection*{Lower bound (\texttt{neverUnderestimates})}
 \textbf{Statement.} For any vertex \(u\), Dijkstra's output never underestimates the true graph distance: \[(\texttt{dijkstra}\ g\ s\ t)\ u \ge \delta(g,s,u)\]
 
-This lemma establishes a global lower bound on the algorithm's output. In the Lean file, \texttt{neverUnderestimates} is currently left as \texttt{admit}. All online references we found assume this property as a given, and formalizing it requires reasoning about graph walks and path induction with Mathlib's \texttt{SimpleGraph.Walk} machinery, which was beyond the scope of this project. We therefore treat this lemma as an axiomatic starting point for our correctness proof.
+This lemma establishes a global lower bound on the algorithm's output. In the Lean file, this lemma is currently left as \texttt{admit}. All online references we found assume this property as a given, since it is so intuitive. We therefore treat this lemma as an axiomatic starting point for our correctness proof.
 
 \subsection*{Source preservation (\texttt{dijkstra\_source\_zero}, \texttt{dijkstra\_rec\_preserves\_zero}, \texttt{relaxNeighbors\_preserves\_source\_zero})}
 \textbf{Statement.} The source vertex \(s\) always maintains distance \(0\) throughout the algorithm: \[(\texttt{dijkstra}\ g\ s\ t)\ s = 0\]
 
-\textbf{English explanation.} Dijkstra initializes \(\texttt{dist}(s) = 0\) and \(\texttt{dist}(v) = \top\) for all \(v \ne s\). We must show that this invariant is preserved through all recursive steps. The key observation is that \texttt{relaxNeighbors} only updates neighbors of the extracted vertex \(u\), and each update sets a neighbor's distance to \(\texttt{dist}(u)+1\). Since the graph is simple (irreflexive), \(s\) is never a neighbor of itself, so it can only be updated if it appears as a neighbor of some other vertex \(u\). But even if \(s\) were a neighbor of \(u\), the update condition \(\texttt{dist}(u)+1 < \texttt{dist}(s)\) would require \(\texttt{dist}(u)+1 < 0\), which is impossible in extended naturals. Therefore \(\texttt{dist}(s)\) remains unchanged at \(0\) after every relaxation step, and by induction on the recursion depth (using strong induction on the heap size), it stays \(0\) in the final output.
+\textbf{English explanation.} Dijkstra initializes \(\texttt{dist}(s) = 0\). We must show that this invariant is preserved through all recursive steps. The key observation is that \texttt{relaxNeighbors} only updates neighbors of the extracted vertex \(u\), and each update sets a neighbor's distance to \(\texttt{dist}(u)+1\). Since the graph is irreflexive, \(s\) is never a neighbor of itself, so it can only be updated if it appears as a neighbor of some other vertex \(u\). But even if \(s\) were a neighbor of \(u\), the update condition \(\texttt{dist}(u)+1 < \texttt{dist}(s)\) would require \(\texttt{dist}(u)+1 < 0\), which is impossible in extended naturals. Therefore \(\texttt{dist}(s)\) remains unchanged at \(0\) after every relaxation step, and by induction on the recursion depth (using strong induction on the heap size), it stays \(0\) in the final output.
 
 \textbf{Lean correspondence.} The proof is split into three lemmas in a bottom-up fashion. \\
 \texttt{relaxNeighbors\_preserves\_source\_zero} proves preservation for a single relaxation step by unfolding the fold over neighbors and showing that the update branch never triggers for the source (the condition \(\texttt{dist}(u)+1 < 0\) is false, which we encode as \texttt{enat\_add\_one\_not\_lt\_zero}). We proceed by induction on the neighbor list, proving that each step preserves \(\texttt{dist}(s)=0\). Next, \texttt{dijkstra\_rec\_preserves\_zero} lifts this to the full recursion via strong induction on \texttt{sizeOf(queue)}: if the queue is empty the result is immediate; otherwise we extract \(u\), apply the previous lemma to get \(\texttt{dist}'(s)=0\) after relaxation, then apply the induction hypothesis to the smaller post-step heap. Finally, \texttt{dijkstra\_source\_zero} invokes the recursive lemma on the initial state.
@@ -374,7 +444,9 @@ Task: "Describe the main challenges, one design decision you would reconsider, a
 
 Challenges for Binary Heap:\\
 
-TODO, Array vs Tree
+Deciding how to represent the binary heap was a big challenge initially. We elaborate on this in section 4.3.
+
+Another challenge we encountered was coordinating the two parts of the project. Both parts took longer than expected, so while we initially thought that we could work on the parts sequentially, we ended up parallelizing the work. We solved this by assuming operations and lemmas, thereby building an interface to the binary heap that we later merged by using the proven lemmas to implement it.
 \\
 
 Challenges for Dijkstra:
@@ -383,9 +455,9 @@ Proving the Dijkstra lemmas turned out to be much harder than expected. One majo
 
 Another big challenge was figuring out how to use induction correctly. Many proofs required us to use strong induction on the size of the heap, which is the data structure that keeps track of the vertices. But we also had to keep track of extra information, like the current distances and the queue of vertices to process. This meant we had to write very precise statements about what we wanted to prove at each step. Writing these statements and proving them took a lot of trial and error. We could figure it out for all but one lemma: The search lemma (\texttt{exists\_extract\_or\_top}) is still unproven because we were not able to get the induction hypothesis right.
 
-Overall, the hardest part of formalizing Dijkstra’s algorithm was turning the intuitive ideas into precise proofs. The proof found relies on a lot of intuition, which had to be completely formalized. This required breaking everything into very small pieces and proving each piece separately. This process was slow and involved a lot of try and error.
+Overall, the hardest part of formalizing Dijkstra’s algorithm was turning the intuitive ideas into precise proofs. The proof found relies on a lot of intuition, which had to be completely formalized. This required breaking everything into very small pieces and proving each piece separately. This process was slow and involved a lot of trial and error.
 
-In total, the time we needed to spend on the project was way greater than expected beforehand.
+In total, the amount of time we needed to spend on the project was much greater than expected beforehand.
 
 
 \subsection{Reflection on LLM Usage}
@@ -394,8 +466,10 @@ We tried using LLMs, but quickly found them to be largely unusable. A major reas
 That said, LLMs were occasionally helpful for very small steps. Given a specific tactic state and a clear goal—such as applying a particular lemma together with a known fact—the model could sometimes suggest one or a few Lean lines that worked. However, this only applied to minor tactic state changes and did not scale beyond that.
 
 \subsection{One design decision we would reconsider}
+One of the main challenges was the decision on how to represent the binary heap. The two options were an array based and a tree based representation. While the array based representation gives easier access to specific indices and to the parent nodes, the tree structure has an inherent structural induction possibility. We decided to use the tree based representation. While working on the project, we would reconsider this choice as an array based implementation would have allowed for a simpler adaptation of the algorithms for the operations of the binary heap. Moreover, for the potential future goal to do runtime analysis on the operation, an array based implementation would give way for more straight-forward reasoning.
+\\
+
 Make distances and priority queue a fixed pair.
-Use array based heap implemetation.
 
 \subsection{What we have learned}
 
