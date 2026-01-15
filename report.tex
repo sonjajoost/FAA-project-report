@@ -423,6 +423,8 @@ This lemma establishes a global lower bound on the algorithm's output. In the Le
 
 \textbf{Lean correspondence.} \texttt{minimal\_counterexample} formalizes the minimality argument. We define \(S\) as \texttt{Finset.univ.filter} on the predicate \(\texttt{dist u} \ne \delta\ g\ s\ u\), prove \(S\) is nonempty using the hypothesis, and apply \texttt{Finset.exists\_min\_image} to obtain a vertex \(u \in S\) minimizing \(\delta(s,\cdot)\). The minimality property follows by showing that if any \(w\) satisfies \(\delta(s,w) < \delta(s,u)\) and were also a counterexample, then \(\delta(s,u) \le \delta(s,w)\) by the minimality of \(u\), contradicting the strict inequality.    
 
+\newpage
+
 \subsubsection{A minimal counterexample has a positive graph distance \\(\texttt{positive\_distance\_of\_counterexample})}
 \textbf{Statement.} This is a simple lemma that state that if we have two distinct nodes, that their true graph distance is greater than zero. \\
 
@@ -506,7 +508,7 @@ Now we prove \texttt{preserve\_y}, which states that \[
       (\texttt{Prod.fst } (\texttt{List.foldl }f\,\, (d,\, pq) \,\,l)) \,\,y = d \,\, y
 \] by induction on the neighbor list: assuming that no element of the list is equal to y, folding f over the list leaves the value at y unchanged. The proof analyzes a single fold step by unfolding f and performing a case split on whether a relaxation occurs; the hypothesis that each neighbor is distinct from y rules out the only case in which the update could affect the value at y. Applying this lemma to the concrete neighbor list shows that next.1 y = dist y.
 
-Then, the lower bound is obtained from a previously established lemma \texttt{extracted\_value\_never\_decreases\_after\_step} stating that, under the preserved Dijkstra invariant, extracted values never decrease in subsequent recursive calls. Instantiating this lemma for the current step yields
+A lower bound is obtained from a previously established lemma \texttt{extracted\_value\_never\_decreases\_after\_step} stating that, under the preserved Dijkstra invariant, extracted values never decrease in subsequent recursive calls. Instantiating this lemma for the current step yields
 \begin{equation}
 \texttt{min\_y\_invariant y next hhNext} \to \texttt{next.1 y $\le$ dijkstra\_rec g s t next.1 next.2 y}
 \label{eq:upper}
@@ -527,7 +529,7 @@ holds after the relaxation step, we have
 \textbf{English explanation \& Lean correspondence.}
 The proof is organized around a strong induction on the size of the priority queue and is implemented in the auxiliary lemma \texttt{nondec}. This lemma states that for any state \(p = (d, q)\) whose queue has size \(n\), if the invariant \texttt{min\_y\_invariant y p} holds and the queue is nonempty, then the current distance \(d\,y\) is bounded above by the value produced by \texttt{dijkstra\_rec g s t d q} at \(y\). The base case corresponds to an empty queue, where \texttt{dijkstra\_rec} unfolds definitionally and the desired inequality holds trivially. In the inductive case, the queue is nonempty, so \texttt{dijkstra\_rec} unfolds to an extraction step followed by a recursive call.
 
-Let \(u_1\) be the vertex extracted from the queue, \(q_1\) the resulting queue, and let \(next2\) denote the state obtained by relaxing the neighbors of \(u_1\). The proof splits the goal \(d\,y \le (\texttt{dijkstra\_rec g s t next2.1 next2.2})\, y\) into two components. First, a monotonicity lemma \texttt{dijkstra\_rec\_le\_input\_map} shows that the recursive result is bounded above by the current distance map, that is,
+Let \(u_1\) be the vertex extracted from the queue, \(q_1\) the resulting queue, and let \texttt{next2} denote the state obtained by relaxing the neighbors of \(u_1\). The proof splits the goal \[\texttt{p.1}\,y \le (\texttt{dijkstra\_rec g s t next2.1 next2.2})\, y\] into two components. First, a monotonicity lemma \texttt{dijkstra\_rec\_le\_input\_map} shows that the recursive result is bounded above by the current distance map, that is,
 \[
 (\texttt{dijkstra\_rec g s t next2.1 next2.2})\, y \le \texttt{next2.1}\, y .
 \]
@@ -548,6 +550,7 @@ which is then used to conclude \texttt{hpreserve\_y}, since \texttt{List.foldl f
 
 Finally, the induction hypothesis is applied to the strictly smaller queue \texttt{next2.2}; the strict decrease in queue size is obtained using a BinaryHeap lemma together with \texttt{sizeOf\_relax\_neighbors\_le}, and the invariant for the next state is supplied by the hypothesis \texttt{hInvPreserve}. This completes the proof.
 
+\newpage
 
 \subsubsection{Search lemma (\texttt{exists\_extract\_or\_top})}
 \textbf{Statement.} The lemma \texttt{exists\_extract\_or\_top} establishes a dichotomy for the value of Dijkstra’s algorithm at a fixed vertex \(y\). Either the algorithm computes \((\texttt{dijkstra g s t})\,y = \top\), meaning that \(y\) is unreachable from the source, or there exists a concrete execution state \((\texttt{dist}, q)\) in which \(y\) is extracted as the minimum element of the priority queue, and the overall Dijkstra computation coincides with a single unfolding step followed by the recursive call starting from the relaxed successor state. This lemma thus formalizes the intuitive fact that if the final distance to \(y\) is finite, then at some point during the execution \(y\) must be removed from the queue and processed.\\
@@ -593,9 +596,9 @@ which is exactly the statement of the lemma. This explicit chain of bounds, firs
 \textbf{Lean correspondence.}
 In Lean, the proof mirrors this structure closely. After unfolding \texttt{dijkstra} and fixing the initial state \((\texttt{dist}_0, \texttt{queue}_0)\), the lemma \texttt{exists\_extract\_or\_top} is invoked to split the proof into two cases. In the \(\top\)-case, rewriting \texttt{dijkstra\_rec} immediately yields the desired inequality using the fact that \(\top + 1 = \top\). In the extraction case, Lean provides witnesses \(\texttt{dist}\), \(q\), and \(\texttt{next}\), together with an equality \texttt{hfinEq} identifying the global Dijkstra result with the recursive call from \texttt{next}. This equality is used pointwise via \texttt{congrFun} to transport inequalities between the two executions.
 
-The core reasoning is encoded by three auxiliary facts. The lemma \texttt{dijkstra\_rec\_le\_input\_map} supplies monotonicity (\texttt{hmono}), bounding the final result by the current distance map. The lemma \texttt{relax\_neighbors\_adj\_upper} provides the adjacency bound on \(\texttt{next.1 u}\). Finally, stability of the value at \(y\) is obtained by a case split on \texttt{next.2.isEmpty}: in the empty case, a local fold argument shows that relaxing neighbors preserves the value at \(y\); in the nonempty case, the preserved invariant allows direct application of \texttt{extracted\_value\_is\_final\_lemma}. Lean then combines these inequalities using transitivity and rewrites via \texttt{hfinEq} to conclude the final bound.
+The core reasoning is encoded by three auxiliary facts. The lemma \texttt{dijkstra\_rec\_le\_input\_map} supplies monotonicity (\texttt{hmono}), bounding the final result by the current distance map. In addition, the lemma \\\texttt{relax\_neighbors\_adj\_upper} provides the adjacency bound on \(\texttt{next.1 u}\). Finally, stability of the value at \(y\) is obtained by a case split on \texttt{next.2.isEmpty}: in the empty case, a local fold argument shows that relaxing neighbors preserves the value at \(y\); in the nonempty case, the preserved invariant allows direct application of \texttt{extracted\_value\_is\_final\_lemma}. Lean then combines these inequalities using transitivity and rewrites via \texttt{hfinEq} to conclude the final bound.
 
-
+\newpage
 
 \subsection{Summary}
 This section provides an overview of the formalization work on Dijkstra's algorithm and outlines the remaining proof obligations.\\
@@ -615,7 +618,7 @@ This section provides an overview of the formalization work on Dijkstra's algori
 \end{itemize}
 \,\\
 
-\textbf{Outstanding obligations (marked as \texttt{sorry}).} A few components were intentionally left unfinished or require additional engineering effort. The global lower-bound lemma \texttt{never\_underestimates}, which asserts that Dijkstra's output never underestimates the true shortest-path distances, was not formalized here; most proofs rely on it as an intuitive argument, and a formalization would require a distinct reasoning approach. The main remaining proof is the search dichotomy \texttt{exists\_extract\_or\_top}: although a strong-induction proof on heap size was attempted, aligning the definitional equalities and induction hypotheses proved challenging, so this lemma currently remains a \texttt{sorry}. Finally, two auxiliary heap lemmas (\texttt{extracted\_min\_correct\_1} and \texttt{extracted\_min\_correct\_2}) were introduced to bridge the binary-heap implementation with the abstract algorithm; these assert that specific heap operations behave as expected at certain points and are considered minor supporting facts rather than core contributions, so they were left as \texttt{sorry} as well.
+\textbf{Outstanding obligations (marked as \texttt{sorry}).} A few components were intentionally left unfinished or require additional engineering effort. The global lower-bound lemma \texttt{never\_underestimates}, which states that Dijkstra's output never underestimates the true shortest-path distances, was not formalized in this project. Since most proofs available online treat this lemma intuitively rather than formally, we decided from the outset not to attempt a formal proof of it. The main remaining proof is the search dichotomy \texttt{exists\_extract\_or\_top}: although a strong-induction proof on heap size was attempted, aligning the definitional equalities and induction hypotheses proved challenging, so this lemma currently remains a \texttt{sorry}. Finally, two auxiliary heap lemmas (\texttt{extracted\_min\_correct\_1} and \texttt{extracted\_min\_correct\_2}) were introduced to bridge the binary-heap implementation with the algorithm; these assert that specific heap operations behave as expected at certain points and are considered minor supporting facts rather than core contributions, so they were left as \texttt{sorry} as well.
 
 
 
@@ -624,38 +627,26 @@ This section provides an overview of the formalization work on Dijkstra's algori
 \section{Efforts \& Reflection}
 
 \subsection{Main Challenges}
+One of the first major challenges was the central question on how to represent the binary heap; we elaborate on this design decision in Section 4.3. 
 
-Challenges for Binary Heap:
+Beyond data representation, proving the lemmas required for Dijkstra’s correctness turned out to be considerably more difficult than anticipated. Lean's automated tactics often struggled with the complexity of the expressions involved: for example, \texttt{simp}, \texttt{grind}, or \texttt{exact?} frequently failed to simplify goals or solve subgoals, especially when reasoning about the recursive definition of \texttt{dijkstra\_rec}. To make progress, we had to manually break proofs into smaller steps, which slowed the development process.
 
-Deciding how to represent the binary heap was a big challenge initially. We elaborate on this in section 4.3.
+A deeper challenge was converting the intuitive reasoning from traditional algorithmic proofs into fully formal arguments. Many proofs of Dijkstra’s algorithm in the literature rely on high-level intuition, where a single sentence in a paper can correspond to hundreds of lines in Lean. Formalization required decomposing each argument into very small, verifiable components and proving each piece individually. This process was slow, meticulous, and error-prone.
 
-Another challenge we encountered was coordinating the two parts of the project. Both parts took longer than expected, so while we initially thought that we could work on the parts sequentially, we ended up parallelizing the work. We solved this by assuming operations and lemmas, thereby building an interface to the binary heap that we later merged by using the proven lemmas to implement it.
-\\
+Determining the correct form of induction further compounded the difficulty. Many proofs (both for the binary heap operations and for the Dijkstra algorithm itself) required strong or generalized induction. In addition, the inductive statements often needed to incorporate extra information, such as the current distance map, the remaining queue of vertices, or other context-dependent variables. This necessitated formulating very precise statements that were simultaneously strong enough to yield a useful induction hypothesis and weak enough to be derivable from the available context. Developing and verifying these statements involved extensive trial and error, and despite successfully formalizing nearly all lemmas, one key result (the search lemma (\texttt{exists\_extract\_or\_top})) remains unproven because the induction hypothesis could not be properly aligned with the recursive structure.
 
-\subsection{Challenges in Formalizing Dijkstra's Algorithm}
-
-Proving the Dijkstra lemmas turned out to be considerably more difficult than anticipated. One major challenge was that Lean's automated tools often failed to handle the complexity of the expressions involved. For instance, tactics such as \texttt{simp}, \texttt{grind}, or even \texttt{exact?} frequently got stuck, particularly when simplifying goals that depended on the recursive definition of \texttt{dijkstra\_rec}. In many cases, the recursion depth limit was reached, preventing the automation from completing. To overcome this, we had to manually break proofs into smaller steps and carefully control the order and application of simplifications. This process required significant attention to detail and consumed substantial time.
-
-Another substantial difficulty was determining the correct form of induction. Many proofs required strong induction on the size of the heap, which tracks the vertices yet also involves additional information, such as the current distance map and the remaining queue of vertices. This necessitated the formulation of very precise statements for each inductive step, ensuring that all relevant data was correctly handled. Developing and verifying these statements involved extensive trial and error. Despite successfully formalizing nearly all of the lemmas, one key result—the search lemma (\texttt{exists\_extract\_or\_top})—remains unproven because we were unable to properly align the induction hypothesis with the recursion.
-
-Overall, the most challenging aspect of the formalization was converting intuitive reasoning into fully rigorous proofs. Proofs of Dijkstra's algorithm available in the literature often rely on high-level intuition, where a single sentence in a paper could correspond to hundreds of lines of formal Lean code. This required breaking each argument into very small, verifiable components and proving them individually. The entire process was slow, iterative, and demanded meticulous attention to detail.
-
-In total, the time required for this project exceeded initial expectations, reflecting both the complexity of the algorithm and the rigor needed for a complete formalization.
-
-
+Finally, coordinating the two parts of the project introduced additional complexity. Both parts took longer than expected, so while we initially thought that we could work on the parts sequentially, we ended up parallelizing the work. We solved this by assuming operations and lemmas, thereby building an interface to the binary heap that we later merged by using the proven lemmas to implement it. In total, the time required for this project exceeded initial expectations.
 
 \subsection{Reflection on LLM Usage}
 We tried using LLMs, but quickly found them to be largely unusable. A major reason is that Lean is not backward-compatible: many facts from older versions of mathlib that LLMs rely on no longer exist. As a result, it was extremely rare for an LLM to produce Lean code that actually compiled.
 
-That said, LLMs were occasionally helpful for very small steps. Given a specific tactic state and a clear goal—such as applying a particular lemma together with a known fact—the model could sometimes suggest one or a few Lean lines that worked. However, this only applied to minor tactic state changes and did not scale beyond that.
+That said, LLMs were occasionally helpful for very small steps. Given a specific tactic state and a clear goal (such as applying a particular lemma together with a known fact) the model could sometimes suggest one or a few Lean lines that worked. However, this only applied to minor tactic state changes and did not scale beyond that.
 
 \subsection{One design decision we would reconsider}
 One of the main challenges was the decision on how to represent the binary heap. The two options were an array based and a tree based representation. While the array based representation gives easier access to specific indices and to the parent nodes, the tree structure has an inherent structural induction possibility. We decided to use the tree based representation. While working on the project, we would reconsider this choice as an array based implementation would have allowed for a simpler adaptation of the algorithms for the operations of the binary heap. Moreover, for the potential future goal to do runtime analysis on the operation, an array based implementation would give way for more straight-forward reasoning.
 
-% TODO? Make distances and priority queue a fixed pair.
-
 \subsection{What we have learned}
-A main takeaway from this project is the importance of modularity. When proving the theorems and lemmas, it was helpful to divide bigger proof goals into smaller ones for reusability as well as for minimizing the complexity. Breaking up lemmas and proving a more general statement furthermore helped to be able to perform functional induction which was sometimes not possible on the more specific statements. We always tried to make the statements as specific as needed and as general as possible. By formalizing the Binary Heap and Dijkstra's shortest path algorithms, we learned how to apply formal methods on real-world algorithms.
+A main takeaway from this project is the importance of modularity. When proving the theorems and lemmas, it was helpful to divide bigger proof goals into smaller ones for reusability as well as for minimizing the complexity. We always tried to make the statements as specific as needed and as general as possible. However, we have learned to be very careful with that, because it was easy to forget small needed assumptions when transfering a proof to a separate lemma.
 
 
 \begin{comment}
