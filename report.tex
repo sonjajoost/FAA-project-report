@@ -51,7 +51,7 @@ This report presents a Lean formalization of a verified binary heap and a correc
 \section{Binary Heap}
 \textbf{Goal.} The goal of the binary heap part of the project is to formalize the binary heap together with the operations needed for the Dijstra algorithm. This included the following:
 \begin{itemize}
-    \item \texttt{heapify}: Create a heap from a given array
+    \item \texttt{heapify}: Create a heap from a given array.
     \item \texttt{insert}: Add a new key to the heap and restore the binary heap invariant by bubbling the element to its correct position.
     \item \texttt{extract-min (/max)}: Pop the minimum (resp. maximum) element from the heap and restore the binary heap invariant by placing a leaf node at the root and trickling it down to the position it belongs.
     \item \texttt{decrease-key (/increase-key)}: Decrease (resp. increase) the value of an element’s key to the new value, which is assumed to be less than or equal to the current key's value and restoring the heap invariant such that the node is at the correct position according to its new value.
@@ -69,9 +69,7 @@ A binary heap as two possible representations. It can be viewed as a binary tree
 \texttt{inductive BinaryTree (}\(\alpha\)\texttt{ : Type)}\\
 \texttt{| leaf : BinaryTree }\(\alpha\)\\
 \texttt{| node : BinaryTree }\(\alpha\)\texttt{ $\to$ }\(\alpha\)\texttt{ $\to$ BinaryTree }\(\alpha\)\texttt{ $\to$ BinaryTree }\(\alpha\)
-\vspace{3mm}
-\newpage
-
+\\\,\\
 We chose to allow a the binary heap to be of any type $\alpha$. As we will later see, there are some restrictions on $\alpha$ needed for the implementation of some operations. The values of the nodes are assigned by a function $f$ that is passed along with the binary tree. $f$ assigns to each node a value of type \texttt{ENat}. \texttt{ENat} allows for the representation of infinity which is needed for the Dijksta algorithm.
 The binary min heap invariant is then defined as a proposition on the binary tree that holds whenever all nodes have a smaller value assigned to by $f$ than its parents:
  \newline
@@ -79,19 +77,17 @@ The binary min heap invariant is then defined as a proposition on the binary tre
 \texttt{def is\_min\_heap : BinaryTree }$\alpha$\texttt{ → (ordering : }$\alpha$\texttt{ → ENat) → Prop}\\
 \texttt{| leaf, \_ => true}\\
 \texttt{| node l v r, f => match l, r with}\\
-\quad\texttt{| leaf, leaf => true}\\
-\quad\texttt{| node \_ lv \_, leaf => f v }$\le $\texttt{ f lv }$\wedge$\texttt{ isMinHeap l f}\\
-\quad\texttt{| leaf, node \_ rv \_ => f v }$ \le $\texttt{ f rv }$\wedge$\texttt{ isMinHeap r f}\\
-\quad\texttt{| node \_ lv \_, node \_ rv \_ =>}\\
-\qquad\texttt{ f v } $\le $\texttt{ f lv }$\wedge$\texttt{ isMinHeap l f }$\wedge$\texttt{}
+\texttt{| leaf, leaf => true}\\
+\hspace*{10mm}\texttt{| node \_ lv \_, leaf => f v }$\le $\texttt{ f lv }$\wedge$\texttt{ isMinHeap l f}\\
+\hspace*{10mm}\texttt{| leaf, node \_ rv \_ => f v }$ \le $\texttt{ f rv }$\wedge$\texttt{ isMinHeap r f}\\
+\hspace*{10mm}\texttt{| node \_ lv \_, node \_ rv \_ =>}\\
+\hspace*{20mm}\texttt{ f v } $\le $\texttt{ f lv }$\wedge$\texttt{ isMinHeap l f }$\wedge$\texttt{}
 \texttt{ f v }$ \le$ \texttt{ f rv }$\wedge$\texttt{ isMinHeap r f}\\
-\vspace{3mm}
-
 
 \subsection{Operations}
-For the operations on the binary heap, we show that they function as expected. In particular, we show that the functionality is correct and the binary heap invariant is established (or preserved, respectively).
+For the operations on the binary heap, we show that they function as expected. In particular, we show that the functionality is correct and that the binary heap invariant is established (or preserved, respectively).
 \subsubsection{heapify}
-Heapify is a subroutine that is used by several of the operations. It takes a binary tree as input for which the heap invariant holds for both of its children if they exist and moves the root node to the correct position such that the heap invariant holds for the whole binary tree. We show for the formalization that it establishes the heap invariant and the output contains the exact same nodes as the input. We formulate the theorem to be over general trees (as opposed to only nodes that have children) to be able to perform induction in the proof. In particular:
+Heapify is a subroutine that is used by several of the operations mentioned below. It takes a binary tree as input for which the heap invariant holds for both of its children, if they exist, and moves the root node to the correct position such that the heap invariant holds for the whole binary tree. We show in the formalization that it establishes the heap invariant and that the output contains the exact same nodes as the input. We formulate the theorem to apply to general trees (as opposed to only nodes that have children) to enable induction in the proof. In particular:
 \\
 
 \begin{theorem}[Theorem. Correctness \texttt{heapify}.]
@@ -103,11 +99,11 @@ Let $bt$ be a binary tree over elements of type $\alpha$, and let $f: \alpha \to
 \\
 \end{theorem}
 
-\textbf{English explanation.} To prove the first part, we just show that no node was added or removed during the heapify operation. The second part requires a proof by functional induction over \texttt{heapify}. The base cases are trivial as the \texttt{leaf} and the node with only \texttt{leafs} as children satisfy the heap invariant by definition. The cases that don't call \texttt{heapify} recursively can be solved with the definition and the assumptions availiable at the respective proof states. For the other three cases, the structure of the proof is similar: We use the fact that a binary tree satisfies the heap condition if both children are min heaps and the value assigned the root node is less of equal to the one of the children. This allows us to use the induction hypothesis for the two children and we are able to use the conditions for the cases to show that the root indeed holds the minimum value.
+\textbf{English explanation.} To prove the first part, we just show that no node was added or removed during the heapify operation. The second part requires a proof by functional induction over \texttt{heapify}. The base cases are trivial, as the \texttt{leaf} and the node with only \texttt{leaves} as children satisfy the heap invariant by definition. The cases that do not call \texttt{heapify} recursively can be solved with the definition and the assumptions available at the respective proof states. For the other three cases, the structure of the proof is similar: We use the fact that a binary tree satisfies the heap condition if both children are min heaps and the value assigned to the root node is less than or equal to that of the children. This allows us to use the induction hypothesis for the two children, and we are able to use the conditions for the cases to show that the root indeed holds the minimum value.\\
 
 
 \textbf{Lean correspondence.}
-We show both statements separately. We split the first one into the both directions (\texttt{contains\_then\_heapify\_contains, heapify\_contains\_then\_contains}) and can prove both with functional induction over \texttt{heapify} and the definition of \texttt{contains} (which corresponds to $\in$).
+We prove both statements separately. We split the first one into the both directions (\texttt{contains\_then\_heapify\_contains, heapify\_contains\_then\_contains}) and can prove both with functional induction over \texttt{heapify} and the definition of \texttt{contains} (which corresponds to $\in$).
 We do \texttt{fun\_induction heapify generalizing l r v; all\_goals expose\_names}. Note that we need to generalize the induction hypothesis in order to apply it to the children of the tree. For the leaf cases and the ones that do not recurs, we can simply use the definition of heapify together with the assumptions. For the cases that call \texttt{heapify}, we define a helper lemma that shows that if the two children are min heaps and the value assigned to the root is less than or equal to that of the children, then the tree is a min heap (\texttt{left\_and\_right\_are\_min\_heap\_and\_root\_is\_min\_of\_children\_is\_min\_heap}). To show that the children are min heaps we can simply use the induction hypothesis (as the children are min heaps, its children are also min heaps, so the induction hypothesis can be applied (by \texttt{min\_heap\_then\_left\_and\_right\_are\_min\_heap})) and the assumptions. To show that the root value is smaller that the values of the children, we use the fact, that in the \texttt{heapify} we switch the root with the smaller child if it is larger and then, the smallest value of each of the children is smaller than the root because the children are min heaps (\texttt{root\_is\_min\_of\_children, min\_heap\_member\_le\_root}) and its members did not change except for the potentially switched root whose value is larger (\texttt{heapify\_contains\_then\_contains}).
 
 \subsubsection{insert}
@@ -135,7 +131,7 @@ v \in (\mathsf{insert}\; bt\; v'\; f)\;
 For the correctness proof, we show two parts. The first one can be further decomposed into the two directions. Showing that the tree with inserted node still contains all nodes can be shown via functional induction over insert assuming there is a node $vi$ n $bt$. The base case is trivial. If the binary tree is initially a leaf, then the case can be solved by contradiction as a leaf can not contain a value. In the step case, we assume v is contained in the current node and analyze whether it is at the root or in one of the subtrees. If it is in a subtree, we apply the induction hypothesis to that subtree and then reconstruct the proof for the inserted tree, showing that insertion preserves membership of existing elements. To show that the inserted node is in the new tree, we can again perform a simple function induction. If the tree was a leaf, the value is added in the root. In the other case it either is inserted at the root which concludes the proof or it is propagated to the children. In that case, we can use the insuction hypothesis.
 For the other direction, we can again perform functional induction over insert. The leaf case is trivial, in that case $v = v'$. In the two step cases, we make a case distinction over the membership of $v$. It is either at the root in which case we have $v=v'$ or it is a member of the children. In that case, we can use the induction hypothesis.
 
-In the second part of the proof we show that insertion maintains the min-heap invariant, assuming the original tree is a min-heap. We use functional induction over insert. The base case is trivial as any node with only leafs as children is a min heap by definition. For the two step cases, we again make use of the fact, that if the children are min heaps and their roots are smaller than the root of $bt$, then $bt$ is a min heap. As the condition in the definition ensures that the value is inserted at the root if it is smaller than the current node, we can show that the root remains the minimum. And as the node is propagated to the children if it is larger, we can make use of the induction hypothesis.
+In the second part of the proof we show that insertion maintains the min-heap invariant, assuming the original tree is a min-heap. We use functional induction over insert. The base case is trivial as any node with only leafs as children is a min heap by definition. For the two step cases, we again make use of the fact, that if the children are min heaps and their roots are smaller than the root of $bt$, then $bt$ is a min heap. As the condition in the definition ensures that the value is inserted at the root if it is smaller than the current node, we can show that the root remains the minimum. And as the node is propagated to the children if it is larger, we can make use of the induction hypothesis.\\
 
 \textbf{Lean correspondence.}
 
@@ -189,7 +185,7 @@ First, we show that every element contained in the resulting tree after extracti
 
 Second, assuming that the original tree satisfies the min heap invariant, we show that \texttt{extract\_min} returns a value $v'$ together with a tree $bt'$ and the resulting tree $bt'$ is again a min heap and the extracted value $v'$ corresponds to the minimum priority stored in the original heap. This follows from the definition of \texttt{extract\_min}, which removes the root of the heap and then restores the heap property by rearranging the remaining nodes. The induction hypothesis ensures that all recursive calls preserve the heap invariant.
 
-Finally, we show that extraction preserves the membership of all elements except for the removed root. If the original tree is a node with the root value $v$, the
+Finally, we show that extraction preserves the membership of all elements except for the removed root. If the original tree is a node with the root value $v$, the\\
 
 
 \textbf{Lean correspondence.}
@@ -224,7 +220,7 @@ The correctness proof for \texttt{decrease\_priority} consists of two parts.
 
 First, we show that decreasing the priority of a node does not change the set of elements contained in the tree. This is split up in two parts and by shown by induction on the definition of \texttt{decrease\_priority} which is a combination of first removing and then inserting the node in the tree. We show that executing them in sequence leads to the same members in the tree.
 
-Second, we show that the min heap invariant is preserved when decreasing a key. As \texttt{decrease\_priority} makes use of heapify, this is shown by the proof of correctness of heapify.
+Second, we show that the min heap invariant is preserved when decreasing a key. As \texttt{decrease\_priority} makes use of heapify, this is shown by the proof of correctness of heapify.\\
 
 \textbf{Lean correspondence.}
 The proof relies on the auxiliary lemmas
@@ -298,10 +294,7 @@ The global and lower bound together force the equality \(\texttt{dist}\ u = \del
 Hence no counterexample exists, and we conclude that \texttt{dijkstra\_correctness} is correct.
 
 
-\paragraph{Preconditions and placeholders.}
-The development assumes the standard BinaryHeap contracts and constructs the correctness proof from a collection of named lemmas, many of which themselves rely on smaller auxiliary results. Figure~\ref{fig:dijkstra-deps} illustrates the dependency structure among the main lemmas used in the correctness proof of Dijkstra’s algorithm; for reasons of space and clarity, some minor lemmas are omitted from the diagram.
-
-All lemmas shown in the diagram have been fully formalized and proven, with only few exceptions. The lemma \\\texttt{exists\_extract\_or\_top} has not yet been completed. The lower-bound lemma \texttt{never\_underestimates} is not proven as it was assumed given / obvious in the original proof. In addition two small helpers that argue over the BinaryHeap are left as sorry (\texttt{extract\_min\_still\_correct\_1} and \texttt{extract\_min\_still\_correct\_2}), because that was not the focus of our work. The reasons these proofs remain unfinished are discussed in more detail in the corresponding sections on the following pages.
+\textbf{Notes.} The development assumes the standard BinaryHeap contracts and constructs the correctness proof from a collection of named lemmas, many of which themselves rely on smaller auxiliary results. Figure~\ref{fig:dijkstra-deps} illustrates the dependency structure among the main lemmas used in the correctness proof of Dijkstra’s algorithm; for reasons of space and clarity, some minor lemmas are omitted from the diagram. All lemmas shown in the diagram have been fully formalized and proven, with only few exceptions. The lemma \\\texttt{exists\_extract\_or\_top} has not yet been completed. The lower-bound lemma \texttt{never\_underestimates} is not proven as it was assumed given / obvious in the original proof. In addition two small helpers that argue over the BinaryHeap are left as sorry (\texttt{extract\_min\_still\_correct\_1} and \texttt{extract\_min\_still\_correct\_2}), because that was not the focus of our work. The reasons these proofs remain unfinished are discussed in more detail in the corresponding sections on the following pages.
 
 \begin{sidewaysfigure}
 \centering
