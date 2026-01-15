@@ -301,7 +301,7 @@ Hence no counterexample exists, and we conclude that \texttt{dijkstra\_correctne
 \paragraph{Preconditions and placeholders.}
 The development assumes the standard BinaryHeap contracts and constructs the correctness proof from a collection of named lemmas, many of which themselves rely on smaller auxiliary results. Figure~\ref{fig:dijkstra-deps} illustrates the dependency structure among the main lemmas used in the correctness proof of Dijkstra’s algorithm; for reasons of space and clarity, some minor lemmas are omitted from the diagram.
 
-All lemmas shown in the diagram have been fully formalized, with two exceptions. The lemma \\\texttt{exists\_extract\_or\_top} has not yet been completed, and the lower-bound lemma \texttt{never\_underestimates} is currently left as a \texttt{sorry}. The reasons these proofs remain unfinished are discussed in the corresponding sections on the following pages.
+All lemmas shown in the diagram have been fully formalized and proven, with only few exceptions. The lemma \\\texttt{exists\_extract\_or\_top} has not yet been completed. The lower-bound lemma \texttt{never\_underestimates} is not proven as it was assumed given / obvious in the original proof. In addition two small helpers that argue over the BinaryHeap are left as sorry (\texttt{extract\_min\_still\_correct\_1} and \texttt{extract\_min\_still\_correct\_2}), because that was not the focus of our work. The reasons these proofs remain unfinished are discussed in more detail in the corresponding sections on the following pages.
 
 \begin{sidewaysfigure}
 \centering
@@ -359,15 +359,26 @@ All lemmas shown in the diagram have been fully formalized, with two exceptions.
 \path (RNI) edge (MONO);
 \path (RNI) edge (EVF);
 
+% Node listing omitted/auxiliary lemmas
+\node[box, below=5mm of EVND, xshift=45mm, align=left, font=\small] (OTHERS) {%
+  \begin{minipage}{60mm}
+  \textbf{Other (omitted) lemmas:}
+  \begin{itemize}[leftmargin=*]
+    \item \texttt{sizeOf\_relax\_neighbors\_le}
+    \item \texttt{relax\_neighbors\_nonempty}
+    \item \texttt{delta\_adj\_step\_ENat}
+    \item \texttt{adj\_mem\_neighbor\_finset} 
+    \item \texttt{mem\_neighbor\_finset\_adj}
+    \item \texttt{extract\_min\_still\_correct\_1} \\and \texttt{extract\_min\_still\_correct\_2}
+    \item various BinaryHeap and Mathlib lemmas
+  \end{itemize}
+  \end{minipage}
+};
 
-
-
-
-
-
-% Group annotations (optional dashed boxes)
-%\node[grp, fit=(RNI) (RAU), label={[align=center]below:{\footnotesize Relaxation facts}}] {};
-%\node[grp, fit= (EVND) (EVF), label={[align=center]right:{\footnotesize Stability at $y$}}] {};
+% Optional visual connector to indicate these are auxiliary to many nodes
+%\path[dashed] (OTHERS.north) edge[bend left=30] (RNI.east);
+%\path[dashed] (OTHERS.north) edge[bend left=20] (SEARCH.east);
+%\path[dashed] (OTHERS.north) edge[bend right=10] (LOWER.east);
 
 \end{tikzpicture}
 \caption{Lemma dependency graph shaping the proof of correctness.}
