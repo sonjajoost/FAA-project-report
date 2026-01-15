@@ -235,57 +235,73 @@ The proof relies on the auxiliary lemmas
 As mentioned, \texttt{decrease\_priority} is built on top of \texttt{insert}, \texttt{remove} and \texttt{merge}, so we showed the corresponding correctness lemmas for \texttt{remove} and \texttt{merge} (\texttt{as correctness of insert is already shown above}) using functional induction and could combine the lemmas with the auxiliary lemmas from \texttt{insert} to prove the final goals.
 
 \section{Dijkstra's algorithm}
-\textbf{Goal.} Formalize Dijkstra's algorithm over finite graphs and prove correctness, using a priority queue abstraction. Our Lean development lives in \texttt{Projects/Lindmar\_Joost/Dijkstra.lean}.\\
+\paragraph{Goal.} Our goal was to formalize Dijkstra's algorithm over finite (connected) graphs and prove correctness, using a priority queue abstraction.\\
 
-We represent the graph as a finite simple graph so that vertices have decidable equality (exactly as we have seen in the BinarySort examples in class). Distances use extended natural numbers (so an unknown distance can be “infinity”), called \texttt{ENat} in Lean. The algorithm state is just a pair: a distance map from vertices to these extended naturals (\(\texttt{dist} : V \to \mathbb{N}_\infty\)) and a binary-heap priority queue (\(\texttt{queue} : \texttt{BinaryHeap} V\)). The heap exposes abstract operations (empty check, extract-min, decrease-priority, size) and the proofs only rely on their contracts. 
+\paragraph{Solution.} We represent the graph as a finite simple graph so that vertices have decidable equality (exactly as we have seen in the BinarySort examples in class). Distances use extended natural numbers (so an unknown distance can be “infinity”), called \texttt{ENat} in Lean. The algorithm state is just a pair: a distance map from vertices to these extended naturals (\(\texttt{dist} : V \to \mathbb{N}_\infty\)) and a binary-heap priority queue (\(\texttt{queue} : \texttt{BinaryHeap} \, V\)). The heap that was implemented in the first part of the project exposes abstract operations (empty check, extract-min, decrease-priority, etc) and the proof for the algorithm only relíes on their contracts. 
 
-The algorithm is split up into three parts: 
+\subsection{Implemenentation}
+
+The implementation of the algorithm is split up into three parts: 
 \begin{itemize}
-	\item Relaxation (Lean: \texttt{relaxNeighbors}) is a simple loop over the neighbors of a vertex u that updates each neighbor v by setting $dist(v)$ to the minimum of its current value and $dist(u)+1$, and it conceptually decreases v’s priority in the heap when that happens.
+	\item Relaxation (Lean: \texttt{relax\_neighbors}) is a simple loop over the neighbors of a vertex u that updates each neighbor v by setting $dist(v)$ to the minimum of its current value and $dist(u)+1$, and it updates the queue (implemented as BinaryHeap) accoridngly.
 	\item The recursive core of Dijkstra (Lean: \texttt{dijkstra\_rec}) repeatedly extracts the current minimum u, relaxes u’s neighbors (updating the distance map and heap), and then recurses on the new state.
 	\item The top-level function (Lean: \texttt{dijkstra}) initializes distances with 0 at the source and infinity elsewhere, inserts the source into the heap, and starts the recursion.
 \end{itemize}
 
 
 
-\subsection*{Termination}
-We split the implementation into three parts: \texttt{dijkstra} (a non-recursive wrapper), \texttt{dijkstra\_rec} (the recursive core), and \texttt{relaxNeighbors} (implemented as a fold over the finite list of neighbors). Hence termination needs to be shown only for \texttt{dijkstra\_rec}: \texttt{dijkstra} is trivially terminating because it does not recurse, and \texttt{relaxNeighbors} terminates by structural recursion on a finite list (Lean accepts it as a terminating fold), so no additional termination proof is required for them.
+\subsection{Termination}
+We split the implementation into three parts: \texttt{dijkstra} (a non-recursive wrapper), \texttt{dijkstra\_rec} (the recursive core), and \texttt{relax\_neighbors} (implemented as a fold over the finite list of neighbors). Since we only need to prove termination for recursive definitions, we only have to show termination explicitly for \texttt{dijkstra\_rec}.
 
-We prove termination by the measure \texttt{queue.sizeOf}: if \texttt{queue.isEmpty} the recursion stops, otherwise extracting the minimum yields \texttt{(u, queue')} and \texttt{BinaryHeap.sizeOf\_extract\_min\_lt\_of\_isEmpty\_eq\_false} gives \(\texttt{queue'.sizeOf} < \texttt{queue.sizeOf}\); since \texttt{relaxNeighbors} does not increase the heap size the post-relax queue has strictly smaller size than the original, so the \texttt{queue.sizeOf} measure decreases on every recursive call. In Lean this is written as \texttt{termination\_by queue.sizeOf} and discharged by applying \texttt{BinaryHeap.sizeOf\_extract\_min\_lt\_of\_isEmpty\_eq\_false} plus the trivial bookkeeping to turn the hypothesis into the expected \texttt{isEmpty = false} form.
+We prove termination by the measure \texttt{queue.sizeOf}: 
+We prove that the heap measure strictly decreases, i.e. $queue''.sizeOf < queue.sizeOf$. Starting from a nonempty heap (the hypothesis $hq$ that $queue \neq queue.empty$ is used), the proof exposes the concrete definitions of the intermediate queues with $hq'\_eq$ and $hq''\_eq$ (both proven via reflexitivity because queue' and queue'' are exactly the second components of extract\_min and relax\_neighbors respectively). The \texttt{calc} chain then rewrites $queue''.sizeOf$ to $(relax\_neighbors\;g\;u\;dist\;queue').2.sizeOf$, applies the lemma \texttt{sizeOf\_relax\_neighbors\_le} to get a non‑strict inequality to $queue'.sizeOf$, rewrites $queue'.sizeOf$ to the second component of extract\_min, and finally uses an exposed lemma from the BinaryHeap interface to get the strict decrease after extraction; together these steps yield the required strict decrease.\\
 
 
-\subsection*{Correctness proof (\texorpdfstring{$\texttt{dijkstra\_correctness}$}{dijkstra\_correctness})}
-\emph{Statement.} For any vertex \(v\), the algorithm’s output equals the graph distance $\delta$: \[(\texttt{dijkstra}\ g\ s\ v)\ v = \delta(g,s,v)\]
+Besides the exposed lemma from the BinaryHeap interface, we also relied in this proof on the lemma \texttt{sizeOf\_relax\_neighbors\_le}. This lemma states that if we relax the neighbors using \texttt{relax\_neighbors} that the queue can only ever decrease in size. In Lean that is expressed as:
+\begin{center}
+    \texttt{BinaryHeap.sizeOf (Prod.snd (relax\_neighbors g u dist q)) $\le$ BinaryHeap.sizeOf q}
+\end{center}
+This lemma is important as it is used in total 4 times throughout our proofs. We can prove it using induction on the the neighbors of a node generalizing the distance map and priority queue. If the neighbors list is empty, the statement is obviously true (in Lean a simple \texttt{simp} is enough). If the neighbors are a list, however, we name dist' and queue' the result of applying the function f (the function applied to all entries in the fold) and show by case distinction that \texttt{queue'.sizeOf $\le$ q.sizeOf}. By applying the induction hypothesis on the tail we know that the size of BinaryHeap after the fold over the tail is \texttt{$\le$ queue'.sizeOf}. By chaining both equalities we can then finish the proof. 
 
-The proof proceeds by fixing the algorithm's output and deriving a contradiction from any alleged disagreement with the true graph distance. Concretely, set
-\[
-\texttt{dist} := \texttt{dijkstra}\ g\ s\ v
-\]
-(in Lean: \texttt{set dist := (dijkstra g s v) with hdist}). First establish the global lower bound
-\[
-\forall u,\ \delta(s,u)\le \texttt{dist}\ u,
-\]
-provided by the lemma \texttt{neverUnderestimates}. Note also that \(\delta(s,s)=0\) and by \texttt{dijkstra\_source\_zero} the algorithm assigns \(0\) to the source, so any counterexample cannot be the source.
 
-Assume, for contradiction, that there exists a vertex \(u\) with \(\texttt{dist}\ u \ne \delta(s,u)\). Choose such a \(u\) that minimizes \(\delta(s,u)\) (Lean: \texttt{minimalCounterexample}). By the previous remark we have \(\delta(s,u)>0\), so take a shortest path from \(s\) to \(u\); this yields a predecessor \(y\) with \(y\sim u\) and
+
+
+\subsection{Correctness proof (\texorpdfstring{$\texttt{dijkstra\_correctness}$}{dijkstra\_correctness})}
+Our goal is to proof that the algorithm is correct, i.e., for any vertex \(v\), the algorithm’s output equals the graph distance $\delta$ defined by Mathlib: \[(\texttt{dijkstra}\ g\ s\ v)\ v = \delta(g,s,v)\]
+
+The proof proceeds by fixing the algorithm's output (concretely, set \( \texttt{dist} := \texttt{dijkstra}\ g\ s\ v \)) and deriving a contradiction from any alleged disagreement with the true graph distance. \\
+
+We assume, for contradiction, that there exists a vertex \(u\) with \(\texttt{dist}\ u \ne \delta(s,u)\). Choose such a \(u\) that minimizes \(\delta(s,u)\), given by \texttt{minimal\_counterexample}. 
+Note also that by \texttt{dijkstra\_source\_zero} the algorithm assigns \(0\) to the source, i.e. \(\texttt{dist}\,  s=0=\delta(s,s)\), so any counterexample cannot be the source. By the previous remark we have \(\delta(s,u)>0\), proven by the lemma \texttt{positive\_distance\_of\_counterexample}.
+
+Take a shortest path from \(s\) to \(u\); this yields a predecessor \(y\) with \(y\sim u\) and
 \[
 \delta(s,u)=\delta(s,y)+1
 \]
-(Lean: \texttt{existsPredOnShortestPath}).
+given by the lemma \texttt{exists\_pred\_on\_shortest\_path}.
 
-By minimality of \(u\) we have \(\delta(s,y)<\delta(s,u)\), hence \[\texttt{dist}\ y=\delta(s,y)\]
+Since \(\delta(s,y)<\delta(s,u)\), we have \[\texttt{dist}\ y=\delta(s,y)\] because $u$ was minimal.
 
-Now apply the algorithmic per-edge final bound \texttt{relaxAdj\_final\_bound} to the edge \(y\sim u\). That lemma yields
+Now apply the algorithmic per-edge final bound \texttt{relax\_adj\_final\_bound} to the edge \(y\sim u\). That lemma yields the upper bound
 \[
 \texttt{dist}\ u \le \texttt{dist}\ y + 1.
 \]
-Substituting \(\texttt{dist}\ y=\delta(s,y)\) and \(\delta(s,y)+1=\delta(s,u)\) gives \(\texttt{dist}\ u \le \delta(s,u)\). Together with the global lower bound \(\delta(s,u)\le \texttt{dist}\ u\) this forces equality \(\texttt{dist}\ u = \delta(s,u)\), contradicting the choice of \(u\).
+Substituting \(\texttt{dist}\ y=\delta(s,y)\) and \(\delta(s,y)+1=\delta(s,u)\) gives \(\texttt{dist}\ u \le \delta(s,u)\).
 
-Hence no counterexample exists, and we conclude \texttt{dijkstra\_correctness}: for every vertex \(v\) the algorithm's output equals the graph distance \(\delta(g,s,v)\).
+We establish the global lower bound
+\[
+\forall u,\ \delta(s,u)\le \texttt{dist}\ u,
+\]
+provided by the lemma \texttt{never\_underestimates}. \\
+
+The global and lower bound together force the equality \(\texttt{dist}\ u = \delta(s,u)\), contradicting the choice of \(u\) as a counterexample.
+Hence no counterexample exists, and we conclude that \texttt{dijkstra\_correctness} is correct.
+
+
 \paragraph{Preconditions and placeholders.}
-The development assumes the standard BinaryHeap contracts and builds the correctness proof from a number of named lemmas, many of which in turn rely on smaller auxiliary facts. Figure~\ref{fig:dijkstra-deps} illustrates the dependency relation between the main lemmas used in this file; For space and clarity some minor lemmas are not shown in the diagram. 
+The development assumes the standard BinaryHeap contracts and constructs the correctness proof from a collection of named lemmas, many of which themselves rely on smaller auxiliary results. Figure~\ref{fig:dijkstra-deps} illustrates the dependency structure among the main lemmas used in the correctness proof of Dijkstra’s algorithm; for reasons of space and clarity, some minor lemmas are omitted from the diagram.
 
-All of the lemmas have been fully formalized except for the search lemma \texttt{exists\_extract\_or\_top}, which is currently left as a \texttt{sorry}, and the lower bound leamm \texttt{neverUnderestimates}. A discussion of why those particular proof remain unfinished appears in the "Main Challenges" section at the end of the report.
+All lemmas shown in the diagram have been fully formalized, with two exceptions. The lemma \\\texttt{exists\_extract\_or\_top} has not yet been completed, and the lower-bound lemma \texttt{never\_underestimates} is currently left as a \texttt{sorry}. The reasons these proofs remain unfinished are discussed in the corresponding sections on the following pages.
 
 \begin{sidewaysfigure}
 \centering
@@ -299,12 +315,12 @@ All of the lemmas have been fully formalized except for the search lemma \texttt
 % Top layer: correctness
 \node[box, font=\normalsize, thick] (CORR) {\textbf{dijkstra\_correctness}};
 
-\node[box, below=24mm of CORR, xshift=-117mm] (LOWER) {lower bound\\\texttt{neverUnderestimates}};
-\node[box, below=24mm of CORR, xshift=-80mm] (ZERO_TOP) {source stays at 0\\\texttt{dijkstra\_source\_zero}};
-\node[box, below=24mm of CORR, xshift=-40mm] (CNT) {properties counterexample\\\texttt{minimalCounterexample}};
-\node[box, below=24mm of CORR, xshift=0mm] (EDGE) {per-edge final bound\\\texttt{relaxAdj\_final\_bound}};
-\node[box, below=24mm of CORR, xshift=41mm] (PRED) {shortest-path predecessor\\\texttt{existsPredOnShortestPath}};
-\node[box, below=24mm of CORR, xshift=93mm] (CNT_DIST) {positive distance of counterexample\\\texttt{positiveDistance\_of\_counterexample}};
+\node[box, below=24mm of CORR, xshift=-120mm] (LOWER) {lower bound\\\texttt{never\_underestimates}};
+\node[box, below=24mm of CORR, xshift=-83mm] (ZERO_TOP) {source stays at 0\\\texttt{dijkstra\_source\_zero}};
+\node[box, below=24mm of CORR, xshift=-44mm] (CNT) {properties counterexample\\\texttt{minimal\_counterexample}};
+\node[box, below=24mm of CORR, xshift=-4mm] (EDGE) {per-edge final bound\\\texttt{relax\_adj\_final\_bound}};
+\node[box, below=24mm of CORR, xshift=39mm] (PRED) {shortest-path predecessor\\\texttt{exists\_pred\_on\_shortest\_path}};
+\node[box, below=24mm of CORR, xshift=93mm] (CNT_DIST) {positive distance of counterexample\\\texttt{positive\_distance\_of\_counterexample}};
 
 % Edges: correctness
 \path (LOWER) edge (CORR);
@@ -317,7 +333,7 @@ All of the lemmas have been fully formalized except for the search lemma \texttt
 % LEVEL 2 (wider spacing to avoid horizontal overlap)
 \node[box, below=24mm of EDGE, xshift=-40mm] (SEARCH) {search along recursion\\\texttt{exists\_extract\_or\_top}};
 \node[box, below=24mm of EDGE, xshift=20mm]   (EVF)    {value at y is final\\\texttt{extracted\_value\_is\_final\_lemma}};
-\node[box, below=24mm of EDGE, xshift=70mm]  (RAU)    {adjacency upper bound\\\texttt{relaxNeighbors\_adj\_upper}};
+\node[box, below=24mm of EDGE, xshift=70mm]  (RAU)    {adjacency upper bound\\\texttt{relax\_neighbors\_adj\_upper}};
 % Edges toward EDGE (per-edge final bound)
 \path (SEARCH) edge (EDGE);
 \path (EVF) edge (EDGE);
@@ -335,11 +351,11 @@ All of the lemmas have been fully formalized except for the search lemma \texttt
 \path (MONO) edge (EVND);
 \path (EVND) edge (EVF);
 
-\node[box, below = 24mm of ZERO_MIDDLE] (ZERO_BOTTOM) {relaxNeighbors preserves source\\\texttt{relaxNeighbors\_preserves\_soruce\_zero}};
+\node[box, below = 24mm of ZERO_MIDDLE] (ZERO_BOTTOM) {relaxNeighbors preserves source\\\texttt{relax\_neighbors\_preserves\_soruce\_zero}};
 \path (ZERO_BOTTOM) edge (ZERO_MIDDLE);
 
 % LEVEL 4
-\node[box, below=24mm of MONO] (RNI) {fold nonincrease\\\texttt{relaxNeighbors\_nonincrease}};
+\node[box, below=24mm of MONO] (RNI) {fold nonincrease\\\texttt{relax\_neighbors\_nonincrease}};
 \path (RNI) edge (MONO);
 \path (RNI) edge (EVF);
 
