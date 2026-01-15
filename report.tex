@@ -46,8 +46,7 @@
 \maketitle
 
 \section{Introduction}
-In this project we formalized the binary heap data structure and proved correctness of its operations as well as Dijkstra's shortest path algorithm.
-(noch mehr vllt TODO)
+This report presents a Lean formalization of a verified binary heap and a correctness development for Dijkstra's shortest-path algorithm that uses the heap as its priority queue. The heap part adopts a tree-based representation and implements the core operations (`heapify`, `insert`, `extract\_min`, `decrease\_key`), together with correctness proofs that these operations preserve the heap invariant, maintain membership and size properties, and satisfy behavioral laws required by Dijkstra's algorithm. These verified properties form a clean priority-queue abstraction that the algorithmic layer relies on. The Dijkstra development implements neighbor relaxation as a fold and the recursive driver `dijkstra\_rec`, and proves a number of lemmas used in the standard correctness argument; these are combined via a minimal-counterexample proof to establish the algorithm's correctness.
 
 \section{Binary Heap}
 \textbf{Goal.} The goal of the binary heap part of the project is to formalize the binary heap together with the operations needed for the Dijstra algorithm. This included the following:
@@ -592,6 +591,25 @@ The core reasoning is encoded by three auxiliary facts. The lemma \texttt{dijkst
 
 
 \subsection{Summary}
+This section provides an overview of the formalization work on Dijkstra's algorithm and outlines the remaining proof obligations.\\
+
+\textbf{Completed work.} The formal development captures the core algorithmic structure in Lean, including the recursive driver \texttt{dijkstra\_rec}, the neighbor relaxation fold \texttt{relax\_neighbors}, and a suite of auxiliary lemmas that encode key operational properties. Among the results established are: 
+\begin{itemize}
+  \item the pointwise nonincrease of the relaxation fold (\texttt{relax\_neighbors\_nonincrease})
+  \item the local adjacency bound for a single relaxation step (\texttt{relax\_neighbors\_adj\_upper})
+  \item the monotonicity of the recursion (\texttt{dijkstra\_rec\_le\_input\_map})
+  \item stability properties for extracted vertices (\texttt{extracted\_value\_never\_decreases\_after\_step} \\and \texttt{extracted\_value\_is\_final\_lemma})
+  \item the per-edge final bound (\texttt{relax\_adj\_final\_bound})
+  \item the minimal-counterexample (\texttt{minimal\_counterexample})
+  \item the predecessor machinery (\texttt{exists\_pred\_on\_shortest\_path})
+  \item source-preservation lemmas (\texttt{relax\_neighbors\_preserves\_source\_zero}, \\\texttt{dijkstra\_rec\_preserves\_source\_zero} and \texttt{dijkstra\_source\_zero})
+  \item positive-distance fact for a counterexample (\texttt{positiveDistance\_of\_counterexample})
+  \item the main correctness statement (\texttt{dijkstra\_correctness})
+\end{itemize}
+\,\\
+
+\textbf{Outstanding obligations (marked as \texttt{sorry}).} A few components were intentionally left unfinished or require additional engineering effort. The global lower-bound lemma \texttt{never\_underestimates}, which asserts that Dijkstra's output never underestimates the true shortest-path distances, was not formalized here; most proofs rely on it as an intuitive argument, and a formalization would require a distinct reasoning approach. The main remaining proof is the search dichotomy \texttt{exists\_extract\_or\_top}: although a strong-induction proof on heap size was attempted, aligning the definitional equalities and induction hypotheses proved challenging, so this lemma currently remains a \texttt{sorry}. Finally, two auxiliary heap lemmas (\texttt{extracted\_min\_correct\_1} and \texttt{extracted\_min\_correct\_2}) were introduced to bridge the binary-heap implementation with the abstract algorithm; these assert that specific heap operations behave as expected at certain points and are considered minor supporting facts rather than core contributions, so they were left as \texttt{sorry} as well.
+
 
 
 \newpage 
